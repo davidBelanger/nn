@@ -2754,6 +2754,17 @@ function nntest.Module_getParameters_8()
 
 end
 
+function nntest.Module_type()
+   local n = nn.Sequential()
+   n:add( nn.Linear(10,10) )
+   n:add( n.modules[1]:clone() )
+   n:add(nn.Sigmoid())
+   n:float()
+   n:double()
+   n:float()
+end
+
+
 function nntest.Module_listModules()
    local batchSize = 4
    local inputSize, outputSize = 7, 6
