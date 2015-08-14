@@ -113,21 +113,12 @@ function Module:clone(...)
    return clone
 end
 
-function Module:type(type)
+function Module:type(type,marked)
    assert(type, 'Module: must provide a type to convert to')
    -- find all tensors and convert them
+   local m = marked or {}
    for key,param in pairs(self) do
-      self[key] = nn.utils.recursiveType(param, type)
-   end
-   return self
-end
-
-function Module:typeHelper(type,marked)
-   assert(type, 'Module: must provide a type to convert to')
-   -- find all tensors and convert them
-   marked[self] = 1
-   for key,param in pairs(self) do
-            self[key] = nn.utils.recursiveTypeRecurse(param, type,marked)
+      self[key] = nn.utils.recursiveType(param, type, m)
    end
    return self
 end
