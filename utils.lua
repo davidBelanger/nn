@@ -1,9 +1,15 @@
 nn.utils = {}
 
 function nn.utils.recursiveType(param, type_str)
-   if torch.type(param) == 'table' then
+  local marked = {}
+  return recursiveTypeRecurse(param,type_str,marked)
+end
+
+function nn.utils.recursiveTypeRecurse(param, type_str, marked)
+   if torch.type(param) == 'table' and (marked[param] == nil) then
+      marked[param] = 1
       for k, v in pairs(param) do
-         param[k] = nn.utils.recursiveType(v, type_str)
+         param[k] = nn.utils.recursiveType(v, type_str,marked)
       end
    elseif torch.isTypeOf(param, 'nn.Module') or
           torch.isTypeOf(param, 'nn.Criterion') then
