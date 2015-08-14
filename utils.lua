@@ -1,24 +1,26 @@
 nn.utils = {}
 
-
-function nn.utils.recursiveType(param, type_str)
-
-   if(torch.type(param) == 'table' and  param.marked == nil) then
-      if torch.isTypeOf(param, 'nn.Module') or
-          torch.isTypeOf(param, 'nn.Criterion') then
-   	     param:type(type_str)
-      elseif torch.type(param) == 'table' then
-      	     for k, v in pairs(param) do
-             	 param[k] = nn.utils.recursiveType(v, type_str)
-      	     end
+function nn.utils.recursiveTypeRecurse(param, type_str, marked)
+  if(marked[param] == nil) then
+    marked[param] = 1
+    if (torch.isTypeOf(param, 'nn.Module') or torch.isTypeOf(param, 'nn.Criterion')) then
+      param:typeHelper(type_str,marked)
+    elseif torch.type(param) == 'table'  then
+      for k, v in pairs(param) do
+            param[k] = nn.utils.recursiveTypeRecurse(v, type_str,marked)
       end
-      param.marked = 1
-   elseif torch.isTensor(param) then
+    elseif torch.isTensor(param) then
        param = param:type(type_str)
+    end
+
    end
    return param
 end
 
+function nn.utils.recursiveType(param, type_str)
+  local marked = {}
+  return nn.utils.recursiveTypeRecurse(param,type_str,marked)
+end
 
 function nn.utils.recursiveResizeAs(t1,t2)
    if torch.type(t2) == 'table' then

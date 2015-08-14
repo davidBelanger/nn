@@ -122,6 +122,15 @@ function Module:type(type)
    return self
 end
 
+function Module:typeHelper(type,marked)
+   assert(type, 'Module: must provide a type to convert to')
+   -- find all tensors and convert them
+   for key,param in pairs(self) do
+      self[key] = nn.utils.recursiveTypeRecurse(param, type,marked)
+   end
+   return self
+end
+
 function Module:float()
    return self:type('torch.FloatTensor')
 end
