@@ -110,6 +110,9 @@
 #include "generic/MultiMarginCriterion.c"
 #include "THGenerateFloatTypes.h"
 
+#include "generic/OneVsAllMultiMarginCriterion.c"
+#include "THGenerateFloatTypes.h"
+
 #include "generic/MultiLabelMarginCriterion.c"
 #include "THGenerateFloatTypes.h"
 
@@ -165,7 +168,8 @@ int luaopen_libnn(lua_State *L)
   nn_FloatVolumetricMaxPooling_init(L);
   nn_FloatVolumetricAveragePooling_init(L);
   nn_FloatMultiMarginCriterion_init(L);
-  nn_FloatMultiLabelMarginCriterion_init(L);
+  nn_FloatOneVsAllMultiMarginCriterion_init(L);
+    nn_FloatMultiLabelMarginCriterion_init(L);
   nn_FloatL1Cost_init(L);
   nn_FloatSpatialUpSamplingNearest_init(L);
   nn_FloatLookupTable_init(L);
@@ -204,6 +208,7 @@ int luaopen_libnn(lua_State *L)
   nn_DoubleVolumetricConvolution_init(L);
   nn_DoubleVolumetricMaxPooling_init(L);
   nn_DoubleVolumetricAveragePooling_init(L);
+  nn_DoubleOneVsAllMultiMarginCriterion_init(L);
   nn_DoubleMultiMarginCriterion_init(L);
   nn_DoubleMultiLabelMarginCriterion_init(L);
   nn_DoubleL1Cost_init(L);
