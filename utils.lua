@@ -1,19 +1,20 @@
 nn.utils = {}
 
+--here, marked[param] ~= nil means that we have at some time entered param for downward recursion
+
 function nn.utils.recursiveTypeRecurse(param, type_str, marked)
-  if(marked[param] == nil) then
-    marked[param] = 1
-    if (torch.isTypeOf(param, 'nn.Module') or torch.isTypeOf(param, 'nn.Criterion')) then
-      param:typeHelper(type_str,marked)
-    elseif torch.type(param) == 'table'  then
+    if torch.type(param) == 'table' and marked[param] == nil then
+      marked[param] = 1
       for k, v in pairs(param) do
             param[k] = nn.utils.recursiveTypeRecurse(v, type_str,marked)
       end
+
+    elseif (torch.isTypeOf(param, 'nn.Module') or torch.isTypeOf(param, 'nn.Criterion')) and marked[param] == nil then
+      param:typeHelper(type_str,marked)    
     elseif torch.isTensor(param) then
        param = param:type(type_str)
     end
-
-   end
+  
    return param
 end
 
