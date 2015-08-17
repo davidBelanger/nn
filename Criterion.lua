@@ -28,11 +28,13 @@ function Criterion:clone()
    return clone
 end
 
-function Criterion:type(type)
+--the second optional argument is used when type() is called recursively to avoid infinite recursion if there are cycles of modules pointing to eachother
+function Criterion:type(type,marked)
    assert(type, 'Criterion: must provide a type to convert to')
    -- find all tensors and convert them
+   local m = marked or {}
    for key,param in pairs(self) do
-      self[key] = nn.utils.recursiveType(param, type)
+      self[key] = nn.utils.recursiveType(param, type, m)
    end
    return self
 end

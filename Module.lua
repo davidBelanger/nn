@@ -113,6 +113,7 @@ function Module:clone(...)
    return clone
 end
 
+--the second optional argument is used when type() is called recursively to avoid infinite recursion if there are cycles of modules pointing to eachother
 function Module:type(type,marked)
    assert(type, 'Module: must provide a type to convert to')
    -- find all tensors and convert them
