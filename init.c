@@ -44,10 +44,19 @@
 #include "generic/PReLU.c"
 #include "THGenerateFloatTypes.h"
 
+#include "generic/RReLU.c"
+#include "THGenerateFloatTypes.h"
+
 #include "generic/SoftMax.c"
 #include "THGenerateFloatTypes.h"
 
+#include "generic/ClassNLLCriterion.c"
+#include "THGenerateFloatTypes.h"
+
 #include "generic/MSECriterion.c"
+#include "THGenerateFloatTypes.h"
+
+#include "generic/SmoothL1Criterion.c"
 #include "THGenerateFloatTypes.h"
 
 #include "generic/MarginCriterion.c"
@@ -92,6 +101,9 @@
 #include "generic/SpatialMaxPooling.c"
 #include "THGenerateFloatTypes.h"
 
+#include "generic/SpatialFractionalMaxPooling.c"
+#include "THGenerateFloatTypes.h"
+
 #include "generic/SpatialAveragePooling.c"
 #include "THGenerateFloatTypes.h"
 
@@ -99,6 +111,9 @@
 #include "THGenerateFloatTypes.h"
 
 #include "generic/VolumetricConvolution.c"
+#include "THGenerateFloatTypes.h"
+
+#include "generic/VolumetricDeconvolution.c"
 #include "THGenerateFloatTypes.h"
 
 #include "generic/VolumetricMaxPooling.c"
@@ -137,7 +152,9 @@ int luaopen_libnn(lua_State *L)
   nn_FloatSquare_init(L);
   nn_FloatHardTanh_init(L);
   nn_FloatLogSoftMax_init(L);
+  nn_FloatClassNLLCriterion_init(L);
   nn_FloatMSECriterion_init(L);
+  nn_FloatSmoothL1Criterion_init(L);
   nn_FloatMarginCriterion_init(L);
   nn_FloatAbsCriterion_init(L);
   nn_FloatDistKLDivCriterion_init(L);
@@ -151,6 +168,7 @@ int luaopen_libnn(lua_State *L)
   nn_FloatSoftShrink_init(L);
   nn_FloatThreshold_init(L);
   nn_FloatPReLU_init(L);
+  nn_FloatRReLU_init(L);
   nn_FloatSparseLinear_init(L);
   nn_FloatTemporalConvolution_init(L);
   nn_FloatTemporalSubSampling_init(L);
@@ -162,9 +180,11 @@ int luaopen_libnn(lua_State *L)
   nn_FloatSpatialConvolutionMap_init(L);
   nn_FloatSpatialSubSampling_init(L);
   nn_FloatSpatialMaxPooling_init(L);
+  nn_FloatSpatialFractionalMaxPooling_init(L);
   nn_FloatSpatialAveragePooling_init(L);
   nn_FloatSpatialAdaptiveMaxPooling_init(L);
   nn_FloatVolumetricConvolution_init(L);
+  nn_FloatVolumetricDeconvolution_init(L);
   nn_FloatVolumetricMaxPooling_init(L);
   nn_FloatVolumetricAveragePooling_init(L);
   nn_FloatMultiMarginCriterion_init(L);
@@ -178,7 +198,9 @@ int luaopen_libnn(lua_State *L)
   nn_DoubleSquare_init(L);
   nn_DoubleHardTanh_init(L);
   nn_DoubleLogSoftMax_init(L);
+  nn_DoubleClassNLLCriterion_init(L);
   nn_DoubleMSECriterion_init(L);
+  nn_DoubleSmoothL1Criterion_init(L);
   nn_DoubleMarginCriterion_init(L);
   nn_DoubleAbsCriterion_init(L);
   nn_DoubleDistKLDivCriterion_init(L);
@@ -192,6 +214,7 @@ int luaopen_libnn(lua_State *L)
   nn_DoubleSoftShrink_init(L);
   nn_DoubleThreshold_init(L);
   nn_DoublePReLU_init(L);
+  nn_DoubleRReLU_init(L);
   nn_DoubleSparseLinear_init(L);
   nn_DoubleTemporalConvolution_init(L);
   nn_DoubleTemporalSubSampling_init(L);
@@ -203,9 +226,11 @@ int luaopen_libnn(lua_State *L)
   nn_DoubleSpatialConvolutionMap_init(L);
   nn_DoubleSpatialSubSampling_init(L);
   nn_DoubleSpatialMaxPooling_init(L);
+  nn_DoubleSpatialFractionalMaxPooling_init(L);
   nn_DoubleSpatialAveragePooling_init(L);
   nn_DoubleSpatialAdaptiveMaxPooling_init(L);
   nn_DoubleVolumetricConvolution_init(L);
+  nn_DoubleVolumetricDeconvolution_init(L);
   nn_DoubleVolumetricMaxPooling_init(L);
   nn_DoubleVolumetricAveragePooling_init(L);
   nn_DoubleOneVsAllMultiMarginCriterion_init(L);

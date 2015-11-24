@@ -14,6 +14,10 @@ thus outputting a Tensor of the same dimension.
   * `f(x)` = `-1, if x <`  `-1,`
   * `f(x)` = `x,` `otherwise.`
 
+The range of the linear region `[-1 1]` can be adjusted by specifying arguments in declaration, for example `nn.HardTanh(min_value, max_value)`.
+Otherwise, `[min_value max_value]` is set to `[-1 1]` by default.
+
+
 ```lua
 ii=torch.linspace(-2,2)
 m=nn.HardTanh()
@@ -37,7 +41,7 @@ Applies the hard shrinkage function element-wise to the input
 `HardShrinkage` operator is defined as:
 
   * `f(x) = x, if x > lambda`
-  * `f(x) = -x, if x < -lambda`
+  * `f(x) = x, if x < -lambda`
   * `f(x) = 0, otherwise`
 
 ```lua
@@ -56,13 +60,13 @@ gnuplot.grid(true)
 
 `module = nn.SoftShrink(lambda)`
 
-Applies the hard shrinkage function element-wise to the input
+Applies the soft shrinkage function element-wise to the input
 [Tensor](https://github.com/torch/torch7/blob/master/doc/tensor.md). The output is the same size as the input.
 
-`HardShrinkage` operator is defined as:
+`SoftShrinkage` operator is defined as:
 
   * `f(x) = x-lambda, if x > lambda`
-  * `f(x) = -x+lambda, if x < -lambda`
+  * `f(x) = x+lambda, if x < -lambda`
   * `f(x) = 0, otherwise`
 
 ```lua
@@ -107,7 +111,7 @@ rescaling them so that the elements of the n-dimensional output Tensor
 lie in the range (0,1) and sum to 1.
 
 `Softmin` is defined as `f_i(x)` = `exp(-x_i-shift) / sum_j exp(-x_j-shift)`,
-where `shift` = `max_i x_i`.
+where `shift` = `max_i -x_i`.
 
 
 ```lua
@@ -123,17 +127,17 @@ gnuplot.grid(true)
 ### SoftPlus ###
 
 Applies the `SoftPlus` function to an n-dimensioanl input Tensor.
-Can be used to constrain the output of a machine to always be positive.
+`SoftPlus` is a smooth approximation to the [ReLU](#nn.ReLU) function and can be used to constrain the output of a machine to always be positive. For numerical stability the implementation reverts to the linear function for inputs above a certain value (20 by default).
 
 `SoftPlus` is defined as `f_i(x)` = `1/beta * log(1 + exp(beta * x_i))`.
 
 ```lua
-ii=torch.randn(10)
+ii=torch.linspace(-3,3)
 m=nn.SoftPlus()
 oo=m:forward(ii)
-go=torch.ones(10)
+go=torch.ones(100)
 gi=m:backward(ii,go)
-gnuplot.plot({'Input',ii,'+-'},{'Output',oo,'+-'},{'gradInput',gi,'+-'})
+gnuplot.plot({'f(x)',ii,oo,'+-'},{'df/dx',ii,gi,'+-'})
 gnuplot.grid(true)
 ```
 ![](image/softplus.png)
@@ -220,6 +224,8 @@ gnuplot.grid(true)
 Applies the `Tanh` function element-wise to the input Tensor,
 thus outputting a Tensor of the same dimension.
 
+`Tanh` is defined as `f(x)` = `(exp(x)-exp(-x))/(exp(x)+exp(-x))`.
+
 ```lua
 ii=torch.linspace(-3,3)
 m=nn.Tanh()
@@ -237,7 +243,9 @@ gnuplot.grid(true)
 Applies the rectified linear unit (`ReLU`) function element-wise to the input Tensor,
 thus outputting a Tensor of the same dimension.
 
-Can optionally do it's operation in-place without using extra state memory:
+`ReLU` is defined as `f(x)` = `max(0,x)`
+
+Can optionally do its operation in-place without using extra state memory:
 ```lua
 m=nn.ReLU(true) -- true = in-place, false = keeping separate state.
 ```
@@ -258,33 +266,77 @@ gnuplot.grid(true)
 
 Applies parametric ReLU, which parameter varies the slope of the negative part:
 
-```max(0,y_i) + a_i * min(0,y_i)```
+`PReLU` is defined as `f(x)` = `max(0,x) + a * min(0,x)`
 
 When called without a number on input as ```nn.PReLU()``` uses shared version, meaning
 has only one parameter. Otherwise if called ```nn.PReLU(nOutputPlane)``` has ```nOutputPlane```
 parameters, one for each input map. The output dimension is always equal to input dimension.
-Note that weight decay should not be used on it. For reference see http://arxiv.org/abs/1502.01852
+Note that weight decay should not be used on it. For reference see [Delving Deep into Rectifiers](http://arxiv.org/abs/1502.01852).
 
 ![](image/prelu.png)
+
+<a name="nn.RReLU"></a>
+## RReLU ##
+
+Applies the randomized leaky rectified linear unit (RReLU) element-wise to the input tensor, thus outputting a tensor of the same dimension. Informally the RReLU is also known as 'insanity' layer.
+
+`RReLU` is defined as `f(x)` = `max(0,x) + a * min(0,x)`, where `a` ~ `U(l,u)`.
+
+In training mode negative inputs are multiplied by a factor `a` drawn from a uniform random distribution `U(l, u)`. In evaluation mode a RReLU behaves like a LeakyReLU with a constant mean factor `a` = `(l+u)/2`.
+
+Syntax:
+```lua
+m=nn.ReLU(
+   l,       -- minimum factor for negative inputs, default: 1/8;
+   u,       -- maximum factor for negative inputs, default: 1/3;
+   inplace  -- if true the result will be written to the input tensor, default: false;
+)
+```
+If `l == u` a RReLU effectively becomes a LeakyReLU. Regardless of operating in in-place mode a RReLU will internally allocate an input-sized `noise` tensor to store random factors for negative inputs. The backward() operation assumes that forward() has been called before. 
+
+For reference see [Empirical Evaluation of Rectified Activations in Convolutional Network](http://arxiv.org/abs/1505.00853).
+```lua
+ii=torch.linspace(-3, 3)
+m=nn.RReLU()
+oo=m:forward(ii):clone()
+gi=m:backward(ii,torch.ones(100))
+gnuplot.plot({'f(x)',ii,oo,'+-'},{'df/dx',ii,gi,'+-'})
+gnuplot.grid(true)
+```
+![](image/rrelu.png)
+
+<a name="nn.SpatialSoftMax"></a>
+## SpatialSoftMax ##
+
+Applies [SoftMax](#nn.SoftMax) over features to each spatial location (height x width of planes).
+The module accepts 1D (vector), 2D (batch of vectors), 3D (vectors in space) or 4D (batch of vectors in space) tensor as input.
+Functionally it is equivalent to [SoftMax](#nn.SoftMax) when 1D or 2D input is used.
+The output dimension is always the same as input dimension.
+
+```lua
+ii=torch.randn(4,8,16,16)  -- batchSize x features x height x width
+m=nn.SpatialSoftMax()
+oo = m:forward(ii)
+```
 
 <a name="nn.AddConstant"></a>
 ## AddConstant ##
 
-Adds a (non-learnable) scalar constant.  This module is sometimes useful for debuggging purposes:  `f(x)` = `x + k`, where `k` is a scalar.
+Adds a (non-learnable) scalar constant.  This module is sometimes useful for debugging purposes:  `f(x)` = `x + k`, where `k` is a scalar.
 
-Can optionally do it's operation in-place without using extra state memory:
+Can optionally do its operation in-place without using extra state memory:
 ```lua
 m=nn.AddConstant(k,true) -- true = in-place, false = keeping separate state.
 ```
-In-place mode restores the original input value after the backward pass, allowing it's use after other in-place modules, like [MulConstant](#nn.MulConstant).
+In-place mode restores the original input value after the backward pass, allowing its use after other in-place modules, like [MulConstant](#nn.MulConstant).
 
 <a name="nn.MulConstant"></a>
 ## MulConstant ##
 
-Multiplies input tensor by a (non-learnable) scalar constant.  This module is sometimes useful for debuggging purposes:  `f(x)` = `k * x`, where `k` is a scalar.
+Multiplies input tensor by a (non-learnable) scalar constant.  This module is sometimes useful for debugging purposes:  `f(x)` = `k * x`, where `k` is a scalar.
 
-Can optionally do it's operation in-place without using extra state memory:
+Can optionally do its operation in-place without using extra state memory:
 ```lua
 m=nn.MulConstant(k,true) -- true = in-place, false = keeping separate state.
 ```
-In-place mode restores the original input value after the backward pass, allowing it's use after other in-place modules, like [AddConstant](#nn.AddConstant).
+In-place mode restores the original input value after the backward pass, allowing its use after other in-place modules, like [AddConstant](#nn.AddConstant).

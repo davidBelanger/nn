@@ -39,9 +39,14 @@ function Linear:updateOutput(input)
       self.output:addmv(1, self.weight, input)
    elseif input:dim() == 2 then
       local nframe = input:size(1)
+      local nElement = self.output:nElement()
       self.output:resize(nframe, self.bias:size(1))
-      if not self.addBuffer or self.addBuffer:nElement() ~= nframe then
-         self.addBuffer = input.new(nframe):fill(1)
+      if self.output:nElement() ~= nElement then
+         self.output:zero()
+      end
+      self.addBuffer = self.addBuffer or input.new()
+      if self.addBuffer:nElement() ~= nframe then
+         self.addBuffer:resize(nframe):fill(1)
       end
       self.output:addmm(0, self.output, 1, input, self.weight:t())
       self.output:addr(1, self.addBuffer, self.bias)

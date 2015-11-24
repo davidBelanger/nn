@@ -8,7 +8,6 @@ Simple Modules are used for various tasks like adapting Tensor methods and provi
     * [Add](#nn.Add) : adds a bias term to the incoming data ;
     * [Mul](#nn.Mul) : multiply a single scalar factor to the incoming data ;
     * [CMul](#nn.CMul) : a component-wise multiplication to the incoming data ;
-    * [CDiv](#nn.CDiv) : a component-wise division to the incoming data ;
     * [Euclidean](#nn.Euclidean) : the euclidean distance of the input to `k` mean centers ;
     * [WeightedEuclidean](#nn.WeightedEuclidean) : similar to [Euclidean](#nn.Euclidean), but additionally learns a diagonal covariance matrix ;
   * Modules that adapt basic Tensor methods :
@@ -18,6 +17,7 @@ Simple Modules are used for various tasks like adapting Tensor methods and provi
     * [Reshape](#nn.Reshape) : a [reshape](https://github.com/torch/torch7/blob/master/doc/maths.md#res-torchreshaperes-x-m-n) of the inputs ;
     * [View](#nn.View) : a [view](https://github.com/torch/torch7/blob/master/doc/tensor.md#result-viewresult-tensor-sizes) of the inputs ;
     * [Select](#nn.Select) : a [select](https://github.com/torch/torch7/blob/master/doc/tensor.md#tensor-selectdim-index) over a given dimension ;
+    * [Index](#nn.Index) : a [index](https://github.com/torch/torch7/blob/master/doc/tensor.md#tensor-indexdim-index) over a given dimension ;
   * Modules that adapt mathematical Tensor methods :
     * [Max](#nn.Max) : a [max](https://github.com/torch/torch7/blob/master/doc/maths.md#torch.max) operation over a given dimension ;
     * [Min](#nn.Min) : a [min](https://github.com/torch/torch7/blob/master/doc/maths.md#torchminresval-resind-x) operation over a given dimension ;
@@ -28,14 +28,17 @@ Simple Modules are used for various tasks like adapting Tensor methods and provi
     * [Power](#nn.Power) : an element-wise [pow](https://github.com/torch/torch7/blob/master/doc/maths.md#res-torchpowres-x) operation ;
     * [Square](#nn.Square) : an element-wise square operation ;
     * [Sqrt](#nn.Sqrt) : an element-wise [sqrt](https://github.com/torch/torch7/blob/master/doc/maths.md#res-torchsqrtres-x) operation ;
+    * [Clamp](#nn.Clamp) : an element-wise [clamp](https://github.com/torch/torch7/blob/master/doc/maths.md#res-torchclampres-tensor1-min_value-max_value) operation ;
+    * [Normalize](#nn.Normalize) : normalizes the input to have unit `L_p` norm ;
     * [MM](#nn.MM) : matrix-matrix multiplication (also supports batches of matrices) ;
   * Miscellaneous Modules :
-    * [BatchNormalization](#nn.BatchNormalization) - mean/std normalization over the mini-batch inputs (with an optional affine transform) ;
-    * [Identity](#nn.Identity) : forward input as-is to output (useful with [ParallelTable](table.md#nn.ParallelTable));
+    * [BatchNormalization](#nn.BatchNormalization) : mean/std normalization over the mini-batch inputs (with an optional affine transform) ;
+    * [Identity](#nn.Identity) : forward input as-is to output (useful with [ParallelTable](table.md#nn.ParallelTable)) ;
     * [Dropout](#nn.Dropout) : masks parts of the `input` using binary samples from a [bernoulli](http://en.wikipedia.org/wiki/Bernoulli_distribution) distribution ;
-    * [SpatialDropout](#nn.SpatialDropout) : Same as Dropout but for spatial inputs where adjacent pixels are strongly correlated ;
+    * [SpatialDropout](#nn.SpatialDropout) : same as Dropout but for spatial inputs where adjacent pixels are strongly correlated ;
     * [Padding](#nn.Padding) : adds padding to a dimension ;
-    * [L1Penalty](#nn.L1Penalty) : adds an L1 penalty to an input (for sparsity);
+    * [L1Penalty](#nn.L1Penalty) : adds an L1 penalty to an input (for sparsity) ;
+    * [GradientReversal](#nn.GradientReversal) : reverses the gradient (to maximize an objective function) ;
 
 <a name="nn.Linear"></a>
 ## Linear ##
@@ -399,11 +402,12 @@ Hence, if an `nxpxq` Tensor was given as input, and `dimension` = `2` then an `n
 ## Sum ##
 
 ```lua
-module = nn.Sum(dimension)
+module = nn.Sum(dimension, nInputDim)
 ```
 
 Applies a sum operation over dimension `dimension`.
 Hence, if an `nxpxq` Tensor was given as input, and `dimension` = `2` then an `nxq` matrix would be output.
+When `nInputDim` is provided, inputs larger than that value will be considered batches where the actual `dimension` to apply the sum operation will be dimension `dimension + 1`.
 
 
 <a name="nn.Euclidean"></a>
@@ -496,7 +500,7 @@ end
 module = nn.Copy(inputType, outputType, [forceCopy, dontCast])
 ```
 
-This layer copies the input to output with type casting from input type from `inputType` to `outputType`. Unless `forceCopy` is true, when the first two arguments are the same, the input isn't copied, only transfered as the output. The default `forceCopy` is false.
+This layer copies the input to output with type casting from `inputType` to `outputType`. Unless `forceCopy` is true, when the first two arguments are the same, the input isn't copied, only transfered as the output. The default `forceCopy` is false.
 When `dontCast` is true, a call to `nn.Copy:type(type)` will not cast the module's `output` and `gradInput` Tensors to the new type. The default is false.
 
 <a name="nn.Narrow"></a>
@@ -715,7 +719,7 @@ Example 2:
 > print(#m:forward(input))
 
  6
-[torch.LongStorage of size 2]
+[torch.LongStorage of size 1]
 
 > print(#m:forward(minibatch))
 
@@ -797,6 +801,23 @@ for i = 1, 10000 do     -- Train for a few iterations
    mlp:updateParameters(0.01)
    print(err)
 end
+```
+
+<a name="nn.Index"></a>
+## Index ##
+
+```lua
+module = nn.Index(dim)
+```
+
+Applies the Tensor [index](https://github.com/torch/torch7/blob/master/doc/tensor.md#tensor-indexdim-index) operation along the given dimension. So
+
+```lua 
+nn.Index(dim):forward{t,i} 
+```
+gives the same output as 
+```lua
+t:index(dim, i)
 ```
 
 <a name="nn.Exp"></a>
@@ -886,6 +907,58 @@ gnuplot.grid(true)
 
 ![](image/power.png)
 
+<a name="nn.Clamp"></a>
+## Clamp ##
+
+```lua
+module = nn.Clamp(min_value, max_value)
+```
+
+Clamps all elements into the range `[min_value, max_value]`.
+Output is identical to input in the range, otherwise elements less than `min_value` (or greater than `max_value`) are saturated to `min_value` (or `max_value`).
+
+```lua
+A = torch.randn(2, 5)
+m = nn.Clamp(-0.1, 0.5)
+B = m:forward(A)
+
+print(A)  -- input
+-1.1321  0.0227 -0.4672  0.6519 -0.5380
+ 0.9061 -1.0858  0.3697 -0.8120 -1.6759
+[torch.DoubleTensor of size 3x5]
+
+print(B)  -- output
+-0.1000  0.0227 -0.1000  0.5000 -0.1000
+ 0.5000 -0.1000  0.3697 -0.1000 -0.1000
+[torch.DoubleTensor of size 3x5]
+```
+
+<a name="nn.Normalize"></a>
+## Normalize ##
+
+```lua
+module = nn.Normalize(p, [eps])
+```
+Normalizes the input Tensor to have unit `L_p` norm. The smoothing parameter `eps` prevents division by zero when the input contains all zero elements (default = `1e-10`).
+
+Input can be 1D or 2D (in which case it's considered as in batch mode)
+
+```lua
+A = torch.randn(3, 5)
+m = nn.Normalize(2)
+B = m:forward(A) -- B is also 3 x 5
+-- take the L2 norm over the second axis:
+print(torch.norm(B, 2, 2)) -- norms is [1, 1, 1]
+```
+
+`Normalize` has a specialized implementation for the `inf` norm, which corresponds to the maximum norm.
+```lua
+A = torch.randn(3,5)
+m = nn.Normalize(math.huge) -- uses maximum/inf norm
+B = m:forward(A)
+maxA = torch.abs(A):max(2)
+print(A,B,maxA)
+```
 
 <a name="nn.MM"></a>
 ## MM ##
@@ -902,7 +975,7 @@ The module also accepts 3D inputs which are interpreted as batches of matrices. 
 model = nn.MM()
 A = torch.randn(b, m, n)
 B = torch.randn(b, n, p)
-C = model.forward({A, B})  -- C will be of size `b x m x n`
+C = model:forward({A, B})  -- C will be of size `b x m x p`
 ```
 
 
@@ -938,12 +1011,12 @@ The module only accepts 2D inputs.
 -- with learnable parameters
 model = nn.BatchNormalization(m)
 A = torch.randn(b, m)
-C = model.forward(A)  -- C will be of size `b x m`
+C = model:forward(A)  -- C will be of size `b x m`
 
 -- without learnable parameters
 model = nn.BatchNormalization(m, nil, nil, false)
 A = torch.randn(b, m)
-C = model.forward(A)  -- C will be of size `b x m`
+C = model:forward(A)  -- C will be of size `b x m`
 ```
 
 <a name="nn.Padding"></a>
@@ -1007,3 +1080,10 @@ autoencoder:add(decoder)
 criterion = nn.MSECriterion()  -- To measure reconstruction error
 -- ...
 ```
+
+<a name="nn.GradientReversal"></a>
+## GradientReversal ##
+
+`module` = `nn.GradientReversal()`
+
+This module preserves the input, but reverses the gradient. This can be used to maximise an objective function whilst using gradient descent, as in "Domain-Adversarial Training of Neural Networks" (http://arxiv.org/abs/1505.07818).

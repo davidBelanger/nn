@@ -9,6 +9,7 @@ function ParallelCriterion:__init(repeatTarget)
 end
 
 function ParallelCriterion:add(criterion, weight)
+   assert(criterion, 'no criterion provided')
    weight = weight or 1
    table.insert(self.criterions, criterion)
    table.insert(self.weights, weight)
@@ -34,7 +35,7 @@ function ParallelCriterion:updateGradInput(input, target)
    return self.gradInput
 end
 
-function ParallelCriterion:type(type)
+function ParallelCriterion:type(type, tensorCache)
    self.gradInput = {}
-   return parent.type(self, type)
+   return parent.type(self, type, tensorCache)
 end
