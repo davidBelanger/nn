@@ -10,6 +10,7 @@ Simple Modules are used for various tasks like adapting Tensor methods and provi
     * [CMul](#nn.CMul) : a component-wise multiplication to the incoming data ;
     * [Euclidean](#nn.Euclidean) : the euclidean distance of the input to `k` mean centers ;
     * [WeightedEuclidean](#nn.WeightedEuclidean) : similar to [Euclidean](#nn.Euclidean), but additionally learns a diagonal covariance matrix ;
+    * [Cosine](#nn.Cosine) : the cosine similarity of the input to `k` mean centers ;
   * Modules that adapt basic Tensor methods :
     * [Copy](#nn.Copy) : a [copy](https://github.com/torch/torch7/blob/master/doc/tensor.md#torch.Tensor.copy) of the input with [type](https://github.com/torch/torch7/blob/master/doc/tensor.md#tensor-or-string-typetype) casting ;
     * [Narrow](#nn.Narrow) : a [narrow](https://github.com/torch/torch7/blob/master/doc/tensor.md#tensor-narrowdim-index-size) operation over a given dimension ;
@@ -370,33 +371,34 @@ i.e. the network successfully learns the input `x` has been scaled by those scal
 ## Max ##
 
 ```lua
-module = nn.Max(dimension)
+module = nn.Max(dimension, nInputDim)
 ```
 
 Applies a max operation over dimension `dimension`.
 Hence, if an `nxpxq` Tensor was given as input, and `dimension` = `2` then an `nxq` matrix would be output.
-
+When `nInputDim` is provided, inputs larger than that value will be considered batches where the actual `dimension` to apply the max operation will be dimension `dimension + 1`.
 
 <a name="nn.Min"></a>
 ## Min ##
 
 ```lua
-module = nn.Min(dimension)
+module = nn.Min(dimension, nInputDim)
 ```
 
 Applies a min operation over dimension `dimension`.
 Hence, if an `nxpxq` Tensor was given as input, and `dimension` = `2` then an `nxq` matrix would be output.
-
+When `nInputDim` is provided, inputs larger than that value will be considered batches where the actual `dimension` to apply the min operation will be dimension `dimension + 1`.
 
 <a name="nn.Mean"></a>
 ## Mean ##
 
 ```lua
-module = nn.Mean(dimension)
+module = nn.Mean(dimension, nInputDim)
 ```
 
 Applies a mean operation over dimension `dimension`.
 Hence, if an `nxpxq` Tensor was given as input, and `dimension` = `2` then an `nxq` matrix would be output.
+When `nInputDim` is provided, inputs larger than that value will be considered batches where the actual `dimension` to apply the mean operation will be dimension `dimension + 1`.
 
 <a name="nn.Sum"></a>
 ## Sum ##
@@ -433,6 +435,18 @@ This module is similar to [Euclidean](#nn.Euclidean), but additionally learns a 
 In other words, for each of the `outputSize` centers `w_j`, there is a diagonal covariance matrices `c_j`, for `j` = `1`,..,`outputSize`, where `c_j` are stored as vectors of size `inputSize`.
 
 The distance `y_j` between center `j` and input `x` is formulated as `y_j = || c_j * (w_j - x) ||`.
+
+<a name="nn.Cosine"></a>
+## Cosine ##
+
+```lua
+module = nn.Cosine(inputSize,outputSize)
+```
+
+Outputs the [cosine similarity](https://en.wikipedia.org/wiki/Cosine_similarity) of the input to `outputSize` centers, i.e. this layer has the weights `w_j`,  for `j` = `1`,..,`outputSize`, where `w_j` are vectors of dimension `inputSize`.
+
+The distance `y_j` between center `j` and input `x` is formulated as `y_j = (x · w_j) / ( || w_j || * || x || )`.
+
 
 <a name="nn.Identity"></a>
 ## Identity ##
@@ -565,7 +579,7 @@ module = nn.Reshape(dimension1, dimension2, ... [, batchMode])
 ```
 
 
-Reshapes an `nxpxqx..`  Tensor into a `dimension1xdimension2x...` Tensor, taking the elements column-wise.
+Reshapes an `nxpxqx..`  Tensor into a `dimension1xdimension2x...` Tensor, taking the elements row-wise.
 
 The optional last argument `batchMode`, when `true` forces the first dimension of the input to be considered the batch dimension, and thus keep its size fixed. This is necessary when dealing with batch sizes of one. When `false`, it forces the entire input (including the first dimension) to be reshaped to the input size. Default `batchMode=nil`, which means that the module considers inputs with more elements than the produce of provided sizes, i.e. `dimension1xdimension2x...`, to be batches.
 
@@ -967,13 +981,18 @@ print(A,B,maxA)
 module = nn.MM(transA, transB)
 ```
 
-Performs multiplications on one or more pairs of matrices. If `transA` is set, the first matrix is transposed before multiplication. If `transB` is set, the second matrix is transposed before multiplication. By default, the matrices do not get transposed.
+Performs multiplications on one or more pairs of matrices. If `transA` is set to true, the first matrix is transposed before multiplication. If `transB` is set to true, the second matrix is transposed before multiplication. By default, the matrices do not get transposed.
 
-The module also accepts 3D inputs which are interpreted as batches of matrices. When using batches, the first input matrix should be of size `b x m x n` and the second input matrix should be of size `b x n x p` (assuming `transA` and `transB` are not set).
+The module also accepts 3D inputs which are interpreted as batches of matrices. When using batches, the first input matrix should be of size `b x m x n` and the second input matrix should be of size `b x n x p` (assuming `transA` and `transB` are not set). If `transA` or `transB` is set, transpose takes place between the second and the third dimensions for the corresponding matrix.
 
 ```lua
 model = nn.MM()
 A = torch.randn(b, m, n)
+B = torch.randn(b, n, p)
+C = model:forward({A, B})  -- C will be of size `b x m x p`
+
+model = nn.MM(true, false)
+A = torch.randn(b, n, m)
 B = torch.randn(b, n, p)
 C = model:forward({A, B})  -- C will be of size `b x m x p`
 ```

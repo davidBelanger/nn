@@ -98,9 +98,9 @@ If provided, the optional argument `weights` should be a 1D `Tensor` assigning w
 This is particularly useful when you have an unbalanced training set.
 
 The `input` given through a `forward()` is expected to contain _log-probabilities_ of each class: `input` has to be a 1D `Tensor` of size `n`.
-Obtaining log-probabilities in a neural network is easily achieved by adding a [`LogSoftMax`](#nn.LogSoftMax) layer in the last layer of your neural network.
+Obtaining log-probabilities in a neural network is easily achieved by adding a [`LogSoftMax`](transfer.md#nn.LogSoftMax) layer in the last layer of your neural network.
 You may use [`CrossEntropyCriterion`](#nn.CrossEntropyCriterion) instead, if you prefer not to add an extra layer to your network.
-This criterion expect a class index (1 to the number of class) as `target` when calling [`forward(input, target`)](#nn.CriterionForward) and [`backward(input, target)`](#nn.CriterionBackward).
+This criterion expects a class index (1 to the number of class) as `target` when calling [`forward(input, target`)](#nn.CriterionForward) and [`backward(input, target)`](#nn.CriterionBackward).
 
 The loss can be described as:
 
@@ -108,7 +108,7 @@ The loss can be described as:
 loss(x, class) = -x[class]
 ```
 
-or in the case of the `weights` argument being specified:
+or in the case of the `weights` argument it is specified as follows:
 
 ```lua
 loss(x, class) = -weights[class] * x[class]
@@ -119,7 +119,7 @@ The following is a code fragment showing how to make a gradient step given an in
 ```lua
 function gradUpdate(mlp, x, y, learningRate)
    local criterion = nn.ClassNLLCriterion()
-   pred = mlp:forward(x)
+   local pred = mlp:forward(x)
    local err = criterion:forward(pred, y)
    mlp:zeroGradParameters()
    local t = criterion:backward(pred, y)
@@ -566,7 +566,7 @@ loss(x, y) = max(0, -y * (x[1] - x[2]) + margin)
 
 ```lua
 p1_mlp = nn.Linear(5, 2)
-p2_mlp = p1_mlp:clone('weight', 'bias', 'gradWeight', 'gradBias')
+p2_mlp = p1_mlp:clone('weight', 'bias')
 
 prl = nn.ParallelTable()
 prl:add(p1_mlp)
@@ -576,7 +576,7 @@ mlp1 = nn.Sequential()
 mlp1:add(prl)
 mlp1:add(nn.DotProduct())
 
-mlp2 = mlp1:clone('weight', 'bias', 'gradWeight', 'gradBias')
+mlp2 = mlp1:clone('weight', 'bias')
 
 mlpa = nn.Sequential()
 prla = nn.ParallelTable()
